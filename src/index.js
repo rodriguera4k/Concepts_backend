@@ -1,5 +1,5 @@
 const express = require('express');
-const { uuid } = require('uuidv4');
+const { uuid, isUuid } = require('uuidv4');
 const app = express();
 
 app.use(express.json());
@@ -7,8 +7,40 @@ app.use(express.json());
 // criei array para usar como memória já que não estamos trabalhando com banco de dados
 const projects = [];
 
+// Middlewares - algum trecho seja disparado em qq lugar
+function logRequests(request, response, next) {
+  const { method, url } = request;
+
+  const logLabel = `[${method.toUpperCase()}] ${url}`;
+
+  console.time(logLabel);
+
+  next(); //prox middleware
+
+  console.timeEnd(logLabel);
+}
+
+// middlaware com return response é um validador ele
+function validateProjectId(request, response, next) {
+  const { id } = request.params;
+
+  if (!isUuid(id)) {
+    return response.status(400).json({ error: 'Deu Ruim' })
+  }
+
+  return next();
+}
+
+
+// sempre que eu quiser criar um interceptador ( middleware) e n quiser que ele atrapalhe o fluxo eu coloco o return next
+
+app.use(logRequests);
+// forma de aplicar middlewares nas rotas
+app.use('/projects/:id', validateProjectId);
+
 // criando query 
 app.get('/projects', (request, response) => {
+
   const { title } = request.query;
 
   const results = title
